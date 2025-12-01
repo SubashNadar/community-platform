@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Media - Community Platform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-upload"></i> Upload Media</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Choose File</label>
+                        <input type="file" class="form-control" id="file" name="file" required 
+                               accept=".jpg,.jpeg,.png,.gif,.mp4,.mov,.avi,.pdf,.doc,.docx,.txt">
+                        <div class="form-text">
+                            Supported formats: Images (JPG, PNG, GIF), Videos (MP4, MOV, AVI), Documents (PDF, DOC, DOCX, TXT)
+                            <br>Maximum file size: 100MB
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Add a description for your file..."></textarea>
+                    </div>
+                    
+                    <!-- File Preview -->
+                    <div id="filePreview" class="mb-3" style="display: none;">
+                        <label class="form-label">Preview:</label>
+                        <div id="previewContainer" class="border rounded p-3 text-center">
+                            <!-- Preview will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Progress -->
+                    <div id="uploadProgress" class="mb-3" style="display: none;">
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('main.media_gallery') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Gallery
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="uploadBtn">
+                            <i class="fas fa-upload"></i> Upload File
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Upload Guidelines -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Upload Guidelines</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Images will be automatically compressed for optimal web performance</li>
+                    <li>Videos should be in MP4 format for best compatibility</li>
+                    <li>Documents are scanned for security before upload</li>
+                    <li>All uploads are subject to community guidelines</li>
+                    <li>Inappropriate content will be removed</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const previewDiv = document.getElementById('filePreview');
+    const previewContainer = document.getElementById('previewContainer');
+    
+    // Clear previous preview
+    previewContainer.innerHTML = '';
+    
+    // Check file size (100MB limit)
+    if (file.size > 100 * 1024 * 1024) {
+        alert('File size too large. Maximum 100MB allowed.');
+        this.value = '';
+        previewDiv.style.display = 'none';
+        return;
+    }
+    
+    // Show file info
+    const fileInfo = document.createElement('div');
+    fileInfo.innerHTML = `
+        <p><strong>File:</strong> ${file.name}</p>
+        <p><strong>Size:</strong> ${(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+        <p><strong>Type:</strong> ${file.type}</p>
+    `;
+    previewContainer.appendChild(fileInfo);
+    
+    // Show preview for images
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'img-fluid mt-2';
+            img.style.maxHeight = '200px';
+            previewContainer.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    previewDiv.style.display = 'block';
+});
+
+// Handle form submission with progress
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = progressDiv.querySelector('.progress-bar');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    // Show progress bar
+    progressDiv.style.display = 'block';
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    
+    // Create XMLHttpRequest for progress tracking
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            progressBar.textContent = Math.round(percentComplete) + '%';
+        }
+    });
+    
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            window.location.href = "{{ url_for('main.media_gallery') }}";
+        } else {
+            alert('Upload failed. Please try again.');
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload File';
+            progressDiv.style.display = 'none';
+        }
+    });
+    
+    xhr.addEventListener('error', function() {
+        alert('Upload failed. Please try again.');
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload File';
+        progressDiv.style.display = 'none';
+    });
+    
+    xhr.open('POST', this.action);
+    xhr.send(formData);
+});
+</script>
+{% endblock %}
