@@ -1,0 +1,9 @@
+1 : run "python -m venv venv"
+2: run "venv\Scripts\activate"
+3: run "pip install -r requirements.txt"
+4: run "flask db init"
+5: run "flask db migrate -m "Initial migration""
+6: run "flask db upgrade"
+7: run "mkdir uploads" (Not needed)
+8: run "python setup_data.py"
+9: run "python debug_run.py"

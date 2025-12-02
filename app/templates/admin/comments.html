@@ -1,0 +1,366 @@
+{% extends "base.html" %} {% block title %}Manage Comments - Admin - Community
+Platform{% endblock %} {% block content %}
+<div
+  class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom"
+>
+  <h1 class="h2"><i class="fas fa-comments"></i> Manage Comments</h1>
+  <div class="btn-toolbar mb-2 mb-md-0">
+    <a
+      href="{{ url_for('admin.dashboard') }}"
+      class="btn btn-outline-secondary"
+    >
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Comments Table -->
+<div class="card shadow">
+  <div class="card-header">
+    <h6 class="m-0 font-weight-bold text-primary">All Comments</h6>
+  </div>
+  <div class="card-body">
+    {% if comments.items %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Author</th>
+            <th>Post</th>
+            <th>Comment</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comment in comments.items %}
+          <tr class="{% if not comment.is_approved %}table-warning{% endif %}">
+            <td>{{ comment.id }}</td>
+            <td>
+              <div class="d-flex align-items-center">
+                {% if comment.author.avatar_url %}
+                <img
+                  src="{{ comment.author.avatar_url }}"
+                  class="rounded-circle me-2"
+                  width="30"
+                  height="30"
+                  alt="Avatar"
+                />
+                {% else %}
+                <div
+                  class="bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center"
+                  style="width: 30px; height: 30px"
+                >
+                  <i class="fas fa-user text-white"></i>
+                </div>
+                {% endif %}
+                <div>
+                  <div class="fw-bold">
+                    {{ comment.author.get_full_name() }}
+                  </div>
+                  <small class="text-muted"
+                    >@{{ comment.author.username }}</small
+                  >
+                </div>
+              </div>
+            </td>
+            <td>
+              <a
+                href="{{ url_for('main.blog_detail', id=comment.post.id) }}"
+                class="text-decoration-none"
+                target="_blank"
+              >
+                {{ comment.post.title[:50] }}{% if comment.post.title|length >
+                50 %}...{% endif %}
+              </a>
+              <br />
+              <small class="text-muted"
+                >by {{ comment.post.author.get_full_name() }}</small
+              >
+            </td>
+            <td>
+              <div class="comment-preview" style="max-width: 300px">
+                {{ comment.content[:100] }}{% if comment.content|length > 100
+                %}...{% endif %}
+              </div>
+            </td>
+            <td>
+              {% if comment.is_approved %}
+              <span class="badge bg-success">Approved</span>
+              {% else %}
+              <span class="badge bg-warning text-dark">Pending</span>
+              {% endif %}
+            </td>
+            <td>
+              <small>{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a
+                  href="{{ url_for('main.blog_detail', id=comment.post.id) }}#comment-{{ comment.id }}"
+                  class="btn btn-outline-primary btn-sm"
+                  title="View Comment"
+                  target="_blank"
+                >
+                  <i class="fas fa-eye"></i>
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-outline-warning btn-sm"
+                  title="Toggle Approval"
+                  data-bs-toggle="modal"
+                  data-bs-target="#toggleApprovalModal{{ comment.id }}"
+                >
+                  {% if comment.is_approved %}
+                  <i class="fas fa-eye-slash"></i>
+                  {% else %}
+                  <i class="fas fa-check"></i>
+                  {% endif %}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  title="Delete Comment"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteModal{{ comment.id }}"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Toggle Approval Modal -->
+          <div
+            class="modal fade"
+            id="toggleApprovalModal{{ comment.id }}"
+            tabindex="-1"
+          >
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">
+                    {% if comment.is_approved %}Hide Comment{% else %}Approve
+                    Comment{% endif %}
+                  </h5>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                  ></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <strong>Comment:</strong>
+                    <div class="border rounded p-2 mt-2 bg-light">
+                      {{ comment.content }}
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <strong>Author:</strong> {{ comment.author.get_full_name()
+                    }} (@{{ comment.author.username }})
+                  </div>
+                  <div class="mb-3">
+                    <strong>Post:</strong>
+                    <a
+                      href="{{ url_for('main.blog_detail', id=comment.post.id) }}"
+                      target="_blank"
+                    >
+                      {{ comment.post.title }}
+                    </a>
+                  </div>
+                  <p>
+                    {% if comment.is_approved %} Are you sure you want to hide
+                    this comment? It will no longer be visible to users. {% else
+                    %} Are you sure you want to approve this comment? It will be
+                    visible to all users. {% endif %}
+                  </p>
+                </div>
+                <div class="modal-footer">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    Cancel
+                  </button>
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.toggle_comment_approval', comment_id=comment.id) }}"
+                    class="d-inline"
+                  >
+                    <button
+                      type="submit"
+                      class="btn btn-{% if comment.is_approved %}warning{% else %}success{% endif %}"
+                    >
+                      {% if comment.is_approved %}Hide Comment{% else %}Approve
+                      Comment{% endif %}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Delete Modal -->
+          <div
+            class="modal fade"
+            id="deleteModal{{ comment.id }}"
+            tabindex="-1"
+          >
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title text-danger">Delete Comment</h5>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                  ></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <strong>Comment:</strong>
+                    <div class="border rounded p-2 mt-2 bg-light">
+                      {{ comment.content }}
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <strong>Author:</strong> {{ comment.author.get_full_name()
+                    }} (@{{ comment.author.username }})
+                  </div>
+                  <p>Are you sure you want to delete this comment?</p>
+                  <p class="text-muted">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    Cancel
+                  </button>
+                  <form
+                    method="POST"
+                    action="{{ url_for('admin.delete_comment', comment_id=comment.id) }}"
+                    class="d-inline"
+                  >
+                    <button type="submit" class="btn btn-danger">
+                      Delete Comment
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if comments.pages > 1 %}
+    <nav aria-label="Comments pagination" class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if comments.has_prev %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="{{ url_for('admin.manage_comments', page=comments.prev_num) }}"
+          >
+            <i class="fas fa-chevron-left"></i> Previous
+          </a>
+        </li>
+        {% endif %} {% for page_num in comments.iter_pages(left_edge=1,
+        right_edge=1, left_current=1, right_current=2) %} {% if page_num %} {%
+        if page_num != comments.page %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="{{ url_for('admin.manage_comments', page=page_num) }}"
+          >
+            {{ page_num }}
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item active">
+          <span class="page-link">{{ page_num }}</span>
+        </li>
+        {% endif %} {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">...</span>
+        </li>
+        {% endif %} {% endfor %} {% if comments.has_next %}
+        <li class="page-item">
+          <a
+            class="page-link"
+            href="{{ url_for('admin.manage_comments', page=comments.next_num) }}"
+          >
+            Next <i class="fas fa-chevron-right"></i>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+
+    <!-- Pagination Info -->
+    <div class="text-center text-muted">
+      <small>
+        Showing {{ comments.per_page * (comments.page - 1) + 1 }} to {{
+        comments.per_page * (comments.page - 1) + comments.items|length }} of {{
+        comments.total }} comments
+      </small>
+    </div>
+    {% endif %} {% else %}
+    <div class="text-center py-5">
+      <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+      <h5 class="text-muted">No comments found</h5>
+      <p class="text-muted">No comments have been posted yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Statistics Summary -->
+{% if comments.items %}
+<div class="row mt-4">
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-primary">{{ comments.total }}</h5>
+        <small class="text-muted">Total Comments</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-success">
+          {{ comments.items | selectattr('is_approved') | list | length }}
+        </h5>
+        <small class="text-muted">Approved</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-warning">
+          {{ comments.items | rejectattr('is_approved') | list | length }}
+        </h5>
+        <small class="text-muted">Pending</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-info">{{ comments.items | length }}</h5>
+        <small class="text-muted">This Page</small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %}

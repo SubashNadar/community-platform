@@ -100,6 +100,24 @@ def toggle_user_status(user_id):
     
     return redirect(url_for('admin.manage_users'))
 
+@bp.route('/users/<int:user_id>/toggle-active', methods=['POST'])
+@login_required
+@admin_required
+def toggle_active(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('You cannot deactivate your own account.', 'error')
+        return redirect(url_for('admin.manage_users'))
+    
+    user.is_active = not user.is_active
+    db.session.commit()
+    
+    status = 'activated' if user.is_active else 'deactivated'
+    flash(f'User {user.username} has been {status}.', 'success')
+    
+    return redirect(url_for('admin.manage_users'))
+
 @bp.route('/users/<int:user_id>/toggle-admin', methods=['POST'])
 @login_required
 @admin_required
@@ -112,6 +130,30 @@ def toggle_admin_status(user_id):
     status = 'granted' if user.is_admin else 'revoked'
     flash(f'Admin privileges {status} for {user.username}.', 'success')
     
+    return redirect(url_for('admin.manage_users'))
+
+
+@bp.route('/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('You cannot delete your own account.', 'error')
+        return redirect(url_for('admin.manage_users'))
+    
+    username = user.username
+    
+    # Delete user (cascade will handle related data)
+    db.session.delete(user)
+    db.session.commit()
+    
+    # Clear cache
+    for page in range(1, 6):
+        cache_delete(f"feed_page_{page}")
+    
+    flash(f'User {username} has been deleted successfully.', 'success')
     return redirect(url_for('admin.manage_users'))
 
 @bp.route('/posts')
@@ -164,6 +206,19 @@ def manage_comments():
     )
     
     return render_template('admin/comments.html', comments=comments)
+
+@bp.route('/comments/<int:comment_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    
+    db.session.delete(comment)
+    db.session.commit()
+    
+    flash('Comment deleted successfully.', 'success')
+    return redirect(url_for('admin.manage_comments'))
+
 
 @bp.route('/comments/<int:comment_id>/toggle-approval', methods=['POST'])
 @login_required

@@ -215,7 +215,15 @@ def blog_detail(id):
                                page=page,
                                per_page=current_app.config['COMMENTS_PER_PAGE'],
                                error_out=False)
-    return render_template('blog_detail.html', post=post, comments=comments)
+    
+    # Get related posts by the same author
+    related_posts = Post.query.filter_by(user_id=post.user_id, is_published=True)\
+                             .filter(Post.id != post.id)\
+                             .order_by(desc(Post.created_at))\
+                             .limit(3).all()
+    
+    return render_template('blog_detail.html', post=post, comments=comments, related_posts=related_posts)
+
 
 @bp.route('/blog/<int:id>/comment', methods=['POST'])
 @login_required

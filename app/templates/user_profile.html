@@ -1,0 +1,161 @@
+{% extends "base.html" %} {% block title %}{{ user.get_full_name() }} -
+Community Platform{% endblock %} {% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body text-center">
+        {% if user.avatar_url %}
+        <img
+          src="{{ user.avatar_url }}"
+          class="rounded-circle mb-3"
+          width="120"
+          height="120"
+          alt="Avatar"
+        />
+        {% else %}
+        <div
+          class="bg-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+          style="width: 120px; height: 120px"
+        >
+          <i class="fas fa-user fa-3x text-white"></i>
+        </div>
+        {% endif %}
+
+        <h4>{{ user.get_full_name() }}</h4>
+        <p class="text-muted">@{{ user.username }}</p>
+
+        {% if user.bio %}
+        <p class="text-muted">{{ user.bio }}</p>
+        {% endif %}
+
+        <div class="text-muted">
+          <small
+            ><i class="fas fa-calendar"></i> Joined {{
+            user.created_at.strftime('%B %Y') }}</small
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Card -->
+    <div class="card mt-3">
+      <div class="card-body">
+        <h6 class="card-title">Activity Stats</h6>
+        <div class="row text-center">
+          <div class="col-6">
+            <h5 class="text-primary">{{ user.posts.count() }}</h5>
+            <small class="text-muted">Posts</small>
+          </div>
+          <div class="col-6">
+            <h5 class="text-success">{{ user.comments.count() }}</h5>
+            <small class="text-muted">Comments</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <!-- User's Posts -->
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-newspaper"></i> Recent Posts</h5>
+      </div>
+      <div class="card-body">
+        {% if posts.items %} {% for post in posts.items %}
+        <div class="border-bottom pb-3 mb-3">
+          <h6>
+            <a
+              href="{{ url_for('main.blog_detail', id=post.id) }}"
+              class="text-decoration-none"
+              >{{ post.title }}</a
+            >
+          </h6>
+          <p class="text-muted small">
+            {{ post.content[:150] }}{% if post.content|length > 150 %}...{%
+            endif %}
+          </p>
+          <small class="text-muted">
+            <i class="fas fa-clock"></i> {{ post.created_at.strftime('%B %d,
+            %Y') }}
+          </small>
+        </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if posts.pages > 1 %}
+        <nav aria-label="Posts pagination">
+          <ul class="pagination pagination-sm justify-content-center">
+            {% if posts.has_prev %}
+            <li class="page-item">
+              <a
+                class="page-link"
+                href="{{ url_for('main.user_profile', username=user.username, page=posts.prev_num) }}"
+                >Previous</a
+              >
+            </li>
+            {% endif %} {% for page_num in posts.iter_pages() %} {% if page_num
+            %} {% if page_num != posts.page %}
+            <li class="page-item">
+              <a
+                class="page-link"
+                href="{{ url_for('main.user_profile', username=user.username, page=page_num) }}"
+                >{{ page_num }}</a
+              >
+            </li>
+            {% else %}
+            <li class="page-item active">
+              <span class="page-link">{{ page_num }}</span>
+            </li>
+            {% endif %} {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+            {% endif %} {% endfor %} {% if posts.has_next %}
+            <li class="page-item">
+              <a
+                class="page-link"
+                href="{{ url_for('main.user_profile', username=user.username, page=posts.next_num) }}"
+                >Next</a
+              >
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endif %} {% else %}
+        <p class="text-muted text-center">No posts yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recent Media -->
+    {% if recent_media %}
+    <div class="card mt-3">
+      <div class="card-header">
+        <h5><i class="fas fa-images"></i> Recent Media</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          {% for media in recent_media %}
+          <div class="col-md-4 mb-3">
+            {% if media.file_type == 'image' %}
+            <img
+              src="{{ media.file_url }}"
+              class="img-fluid rounded"
+              alt="{{ media.filename }}"
+            />
+            {% else %}
+            <div class="bg-light rounded p-3 text-center">
+              <i class="fas fa-file fa-2x text-muted"></i>
+              <p class="small text-muted mt-2">{{ media.filename }}</p>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

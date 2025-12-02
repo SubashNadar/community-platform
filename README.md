@@ -47,27 +47,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-5. **Environment Configuration**
-
-```bash
-copy .env.example .env
-```
-
-Or create `.env` manually:
-
-```bash
-echo "FLASK_APP=app.py" > .env
-```
-
-```bash
-echo "FLASK_ENV=development" >> .env
-```
-
-```bash
-echo "SECRET_KEY=your-secret-key-here" >> .env
-```
-
-6. **Database Setup**
+5. **Database Setup**
 
 ```bash
 flask db init
