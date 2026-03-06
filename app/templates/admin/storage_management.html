@@ -1,0 +1,204 @@
+{% extends "admin/base.html" %} {% block title %}Storage Management{% endblock
+%} {% block content %}
+<div class="container-fluid">
+  <h1>Google Cloud Storage Management</h1>
+
+  <!-- Storage Overview -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Total Storage</h5>
+          <h2>{{ "%.2f"|format(storage_stats.total_size_gb) }} GB</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Total Files</h5>
+          <h2>{{ storage_stats.total_files }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Active Buckets</h5>
+          <h2>
+            {{ storage_stats.buckets|length }} / {{ storage_stats.max_buckets }}
+          </h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Current Bucket</h5>
+          <p>{{ storage_stats.current_bucket }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bucket Details -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>Bucket Usage</h5>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Bucket Name</th>
+            <th>Size (GB)</th>
+            <th>Files</th>
+            <th>Usage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bucket in storage_stats.buckets %}
+          <tr>
+            <td>{{ bucket.name }}</td>
+            <td>{{ "%.2f"|format(bucket.size_gb) }}</td>
+            <td>{{ bucket.files }}</td>
+            <td>
+              <div class="progress">
+                <div
+                  class="progress-bar"
+                  data-usage="{{ bucket.usage_percentage }}"
+                >
+                  {{ "%.1f"|format(bucket.usage_percentage) }}%
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Uploads -->
+  {% if recent_uploads %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>Recent Uploads</h5>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Size</th>
+            <th>Uploaded By</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for file in recent_uploads[:10] %}
+          <tr>
+            <td>{{ file.original_filename }}</td>
+            <td>{{ "%.2f"|format(file.file_size / 1048576) }} MB</td>
+            <td>{{ file.user.username if file.user else 'Unknown' }}</td>
+            <td>{{ file.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  <div class="card">
+    <div class="card-header">
+      <h5>Storage Actions</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <form
+            method="POST"
+            action="{{ url_for('admin.extend_storage') }}"
+            class="mb-3"
+          >
+            {% if storage_stats.buckets|length >= storage_stats.max_buckets %}
+            <button type="submit" class="btn btn-primary" disabled>
+              <i class="fas fa-plus"></i> Extend Storage
+            </button>
+            <small class="text-muted d-block">Maximum buckets reached</small>
+            {% else %}
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Extend Storage
+            </button>
+            {% endif %}
+          </form>
+        </div>
+        <div class="col-md-6">
+          <form
+            method="POST"
+            action="{{ url_for('admin.cleanup_storage') }}"
+            class="mb-3"
+          >
+            <div class="input-group">
+              <input
+                type="number"
+                name="days_old"
+                value="90"
+                min="1"
+                max="365"
+                class="form-control"
+                style="max-width: 150px"
+              />
+              <span class="input-group-text">days old</span>
+              <button type="submit" class="btn btn-warning">
+                <i class="fas fa-broom"></i> Clean Old Files
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Auto-refresh button -->
+      <button onclick="location.reload();" class="btn btn-secondary">
+        <i class="fas fa-sync"></i> Refresh Stats
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Set progress bar widths and colors based on usage
+    const progressBars = document.querySelectorAll(".progress-bar[data-usage]");
+
+    progressBars.forEach(function (bar) {
+      const usage = parseFloat(bar.getAttribute("data-usage")) || 0;
+
+      // Set width
+      bar.style.width = usage + "%";
+
+      // Set color based on usage
+      if (usage > 95) {
+        bar.classList.add("bg-danger");
+      } else if (usage > 80) {
+        bar.classList.add("bg-warning");
+      } else {
+        bar.classList.add("bg-success");
+      }
+
+      // Set ARIA attributes
+      bar.setAttribute("role", "progressbar");
+      bar.setAttribute("aria-valuenow", usage);
+      bar.setAttribute("aria-valuemin", "0");
+      bar.setAttribute("aria-valuemax", "100");
+    });
+
+    // Auto-refresh every 30 seconds
+    setTimeout(function () {
+      location.reload();
+    }, 30000);
+  });
+</script>
+{% endblock %}

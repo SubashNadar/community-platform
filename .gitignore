@@ -1,0 +1,43 @@
+# Credentials - NEVER COMMIT THESE
+credentials/
+*.json
+.env
+.env.*
+service-account.json
+firebase-admin-sdk.json
+gcs-service-account.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.codesight/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+logs/
